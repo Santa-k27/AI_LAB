@@ -1,55 +1,57 @@
 from collections import deque
 
-def water_jug_BFS(x, y, z):
-    visited = set()
-    queue = deque([(0, 0, "")])  
+# Possible actions
+'''
+    1. Fill first jug -> (capacity1, y)
+    2. Fill second jug -> (x, capacity2)
+    3. Empty first jug -> (0, y)
+    4. Empty second jug -> (x, 0)
+    5. Pour from second jug to first jug
+        Case1: Second becomes empty, completely filling jug1 -> (capacity1, 0)
+        Case2: Second has some quantity remaining, completely filling jug1 -> (capacity1, x + y - capacity1)
+        Case3: Second becomes empty, partially filling jug1 -> (x+y, 0)
+        Case4: Second has some quantity remaining, partially filling jug1 -> (x+y, x+y-capacity1)
+    6. Pour from first jug to second jug
+        Case1: First becomes empty, completely filling jug2 -> (0, capacity2)
+        Case2: First has some quantity remaining, completely filling jug2 -> (x+y-capacity2, capacity2)
+        Case3: First becomes empty, partially filling jug2 -> (0, x+y)
+        Case4: First has some quantity remaining, partially filling jug2 -> (x+y-capacity2, x+y)
+'''
+def water_jug_problem(capacity1, capacity2, target):
+    # initial state (x, y) where x and y are the amounts of water in the two jugs
+    state = (0, 0)
+    parent_dict = {}
+    queue = deque()
+    queue.append(state)
     while queue:
-        jug_a, jug_b, path = queue.popleft()  
-        
-        if jug_a == z or jug_b == z or jug_a + jug_b == z:
-            print(f'Steps:\n {path}')  
-            return True
+        state = queue.popleft()
+        if state == (target, 0):
+            # goal state reached
+            path = [state]
+            while state in parent_dict:
+                if state == (0,0):
+                    break
+                state = parent_dict[state]
+                path.append(state)
+            path.reverse()
+            return path
+        x, y = state
+        # generate all possible successor states
+        states = [(capacity1, y), (x, capacity2), (0, y), (x, 0), (min(x + y, capacity1), max(0, x + y - capacity1)), (max(0, y + x - capacity2), min(y + x, capacity2))]
+        for new_state in states:
+            if new_state not in parent_dict:
+                parent_dict[new_state] = state
+                queue.append(new_state)
+    return None
 
-        if (jug_a, jug_b) in visited:
-            continue
+# example
+capacity1 = 4
+capacity2 = 3
+target = 2
+path = water_jug_problem(capacity1, capacity2, target)
 
-        visited.add((jug_a, jug_b))
-
-        # Fill jug A
-        if jug_a < x:
-            queue.append((x, jug_b, path + "Fill jug A\n ")) 
-
-        # Fill jug B
-        if jug_b < y:
-            queue.append((jug_a, y, path + "Fill jug B\n ")) 
-
-        # Empty jug A
-        if jug_a > 0:
-            queue.append((0, jug_b, path + "Empty jug A\n"))  
-
-        # Empty jug B
-        if jug_b > 0:
-            queue.append((jug_a, 0, path + "Empty jug B\n "))  
-
-        # Pour from A to B
-        if jug_a + jug_b >= y:
-            queue.append((jug_a - (y - jug_b), y, path + "Pour from A to B\n ")) 
-        else:
-            queue.append((0, jug_a + jug_b, path + "Pour from A to B\n "))  
-
-        # Pour from B to A
-        if jug_a + jug_b >= x:
-            queue.append((x, jug_b - (x - jug_a), path + "Pour from B to A\n ")) 
-        else:
-            queue.append((jug_a + jug_b, 0, path + "Pour from B to A\n "))  
-
-    return False
-
-x = int(input("Enter the capacity of the first jug: "))
-y = int(input("Enter the capacity of the second jug: "))
-z = int(input("Enter the required amount of water: "))
-
-if water_jug_BFS(x, y, z):
-    print(f'You can measure {z} liters of water using {x}-liter and {y}-liter jugs.')
+if path is None:
+    print("No solution found.")
 else:
-    print(f'You cannot measure {z} liters of water using {x}-liter and {y}-liter jugs.')
+    for state in path:
+        print(state)
